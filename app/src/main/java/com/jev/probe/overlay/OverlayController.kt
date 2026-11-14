@@ -72,6 +72,9 @@ class OverlayController(private val ctx: Context) {
     /** "换一组" / retry: draft a new set of candidates for the same judgment. */
     var onRegenerate: (() -> Unit)? = null
 
+    /** Menu → analyze text the user copied out of a chat that hides its node tree. */
+    var onClipboardAnalyze: (() -> Unit)? = null
+
     /** Menu → dump the foreground accessibility tree for calibration. */
     var onDumpTree: (() -> Unit)? = null
 
@@ -300,6 +303,7 @@ class OverlayController(private val ctx: Context) {
         }
         menu.addView(menuItem("截屏识别一次") { dismissMenu(); onOcrCapture?.invoke() })
         menu.addView(menuItem("把当前会话存为联系人") { dismissMenu(); onSaveContact?.invoke() })
+        menu.addView(menuItem("分析剪贴板消息") { dismissMenu(); onClipboardAnalyze?.invoke() })
         menu.addView(menuItem("导出控件树") { dismissMenu(); onDumpTree?.invoke() })
         menu.addView(menuItem("打开设置") { dismissMenu(); openSettings() })
         menu.addView(menuItem("隐藏助手（本次）") { hide() })

@@ -272,6 +272,7 @@ open class ChatCaptureService : AccessibilityService() {
         // Bubble menu: one manual screenshot + OCR, for any app at all.
         overlay?.onOcrCapture = { ocrCaptureManual() }
         overlay?.onDumpTree = { dumpAccessibilityTree() }
+        overlay?.onClipboardAnalyze = { analyzeClipboard() }
         // Keep the process at foreground importance so MIUI does not freeze us.
         runCatching { KeepAliveService.start(this) }
         // Load the bundled OCR model now, off the main thread: the first
@@ -818,6 +819,36 @@ open class ChatCaptureService : AccessibilityService() {
      * Download/DSH-Go so a capture rule can be calibrated against the real
      * layout. Never sent anywhere; the user shares the file by hand.
      */
+    /**
+     * WeChat hides its chat window from accessibility, so the only reliable
+     * path for it is "copy the message, tap the bubble". Reads the clipboard
+     * text as one incoming message and runs the normal analysis on it.
+     */
+    private fun analyzeClipboard() {
+        val text = try {
+            val cm = getSystemService(CLIPBOARD_SERVICE) as android.content.ClipboardManager
+            val clip = cm.primaryClip
+            if (clip != null && clip.itemCount > 0) clip.getItemAt(0).coerceToText(this)?.toString()?.trim() else null
+        } catch (e: Exception) {
+            Log.w(TAG, "clipboard read failed: ${e.javaClass.simpleName}")
+            null
+        }
+        if (text.isNullOrEmpty()) { overlay?.toast("剪贴板里没有文字"); return }
+        if (!prefs.hasKey()) { overlay?.showError("未设置判断接口密钥，去设置里填"); return }
+
+        val root = rootInActiveWindow
+        val pkg = root?.packageName?.toString() ?: foregroundPkg ?: activePkg ?: ""
+        val title = currentSnapshot?.title ?: root?.let {
+            findTitleInActionBar(it, Int.MAX_VALUE, resources.displayMetrics.widthPixels, resources, 0.15, 0.85)
+        }
+        val target = root?.let { targetFor(it) } ?: ConversationSession.Target(pkg, root?.windowId ?: 0, title)
+        observeTarget(target)
+        val snapshot = ChatSnapshot(title, listOf(Msg("other", text.take(2000))))
+        currentSnapshot = snapshot
+        pendingSnapshot = snapshot
+        runAnalysis()
+    }
+
     private fun dumpAccessibilityTree() {
         // Walk synchronously on the main thread: an AccessibilityNodeInfo kept
         // across threads (or across a window change) comes back as an empty
