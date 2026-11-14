@@ -281,6 +281,7 @@ open class ChatCaptureService : AccessibilityService() {
         overlay?.onOcrCapture = { ocrCaptureManual() }
         overlay?.onDumpTree = { dumpAccessibilityTree() }
         overlay?.onClipboardAnalyze = { analyzeClipboard() }
+        overlay?.onCalibratePaste = { calibratePastePoint() }
         // Keep the process at foreground importance so MIUI does not freeze us.
         runCatching { KeepAliveService.start(this) }
         // Load the bundled OCR model now, off the main thread: the first
@@ -1082,6 +1083,21 @@ open class ChatCaptureService : AccessibilityService() {
      * item we actually recognised on screen, never a guessed coordinate over the
      * conversation.
      */
+    /**
+     * The composer sits at a different height on every phone (and moves once the
+     * keyboard is up), so the user drags the bubble onto the input box and taps
+     * "用胶囊位置作粘贴点". That spot is then used for every long-press.
+     */
+    private fun calibratePastePoint() {
+        val c = overlay?.bubbleCenterOnScreen()
+        val w = resources.displayMetrics.widthPixels
+        val h = resources.displayMetrics.heightPixels
+        if (c == null) { overlay?.toast("把助手球拖到输入框上，再点这里校准"); return }
+        prefs.pasteX = (c[0] / w).coerceIn(0.05f, 0.95f)
+        prefs.pasteY = (c[1] / h).coerceIn(0.2f, 0.95f)
+        overlay?.toast("已记住粘贴点 ${(prefs.pasteX * 100).toInt()}% x ${(prefs.pasteY * 100).toInt()}%")
+    }
+
     private fun pasteByGesture(text: String) {
         copyToClipboard(text)
         overlay?.toast("正在尝试粘贴…")
@@ -1091,7 +1107,7 @@ open class ChatCaptureService : AccessibilityService() {
         // on the panel itself. Take it off for the duration of the gesture.
         overlay?.setHiddenForShot(true)
         main.postDelayed({
-            val path = Path().apply { moveTo(w / 2f, h * 0.935f) }
+            val path = Path().apply { moveTo(w * prefs.pasteX, h * prefs.pasteY) }
             val gesture = GestureDescription.Builder()
                 .addStroke(GestureDescription.StrokeDescription(path, 0, 700))
                 .build()

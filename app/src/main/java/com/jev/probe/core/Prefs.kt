@@ -203,6 +203,20 @@ class Prefs(context: Context, prefsName: String = PREFS_MAIN) {
         get() = sp.getInt(K_BUBBLE_Y, -1)
         set(v) = sp.edit().putInt(K_BUBBLE_Y, v).apply()
 
+    /**
+     * Where to long-press to reach the chat input box, as a fraction of the
+     * screen. Calibrated by the user (drag the bubble onto the input box, then
+     * "用胶囊位置作粘贴点") because the composer's height differs per phone and
+     * per keyboard.
+     */
+    var pasteX: Float
+        get() = sp.getFloat(K_PASTE_X, 0.5f)
+        set(v) = sp.edit().putFloat(K_PASTE_X, v).apply()
+
+    var pasteY: Float
+        get() = sp.getFloat(K_PASTE_Y, 0.71f)
+        set(v) = sp.edit().putFloat(K_PASTE_Y, v).apply()
+
     /** Remembered horizontal position of the bubble (px); -1 = default. */
     var bubbleX: Int
         get() = sp.getInt(K_BUBBLE_X, -1)
@@ -300,6 +314,8 @@ class Prefs(context: Context, prefsName: String = PREFS_MAIN) {
         private const val K_WHITELIST = "whitelist"
         private const val K_OPACITY = "overlay_opacity"
         private const val K_BUBBLE_Y = "bubble_y"
+        private const val K_PASTE_X = "paste_point_x"
+        private const val K_PASTE_Y = "paste_point_y"
         private const val K_BUBBLE_X = "bubble_x"
         private const val K_AUTO = "auto_analyze"
         private const val K_CANDIDATES = "candidate_count"

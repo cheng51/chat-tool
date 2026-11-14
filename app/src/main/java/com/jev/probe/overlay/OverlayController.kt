@@ -75,6 +75,9 @@ class OverlayController(private val ctx: Context) {
     /** Menu → analyze text the user copied out of a chat that hides its node tree. */
     var onClipboardAnalyze: (() -> Unit)? = null
 
+    /** Menu → remember the bubble's current spot as the composer's position. */
+    var onCalibratePaste: (() -> Unit)? = null
+
     /** Menu → dump the foreground accessibility tree for calibration. */
     var onDumpTree: (() -> Unit)? = null
 
@@ -304,12 +307,20 @@ class OverlayController(private val ctx: Context) {
         menu.addView(menuItem("截屏识别一次") { dismissMenu(); onOcrCapture?.invoke() })
         menu.addView(menuItem("把当前会话存为联系人") { dismissMenu(); onSaveContact?.invoke() })
         menu.addView(menuItem("分析剪贴板消息") { dismissMenu(); onClipboardAnalyze?.invoke() })
+        menu.addView(menuItem("用胶囊位置作粘贴点") { dismissMenu(); onCalibratePaste?.invoke() })
         menu.addView(menuItem("导出控件树") { dismissMenu(); onDumpTree?.invoke() })
         menu.addView(menuItem("打开设置") { dismissMenu(); openSettings() })
         menu.addView(menuItem("隐藏助手（本次）") { hide() })
         menu.addView(menuItem("取消") { dismissMenu() })
         menuView = menu
         r.addView(menu)
+    }
+
+    /** Screen position of the bubble's centre, or null when the card is showing. */
+    fun bubbleCenterOnScreen(): FloatArray? {
+        val p = lp ?: return null
+        if (mode != Mode.BUBBLE) return null
+        return floatArrayOf(p.x + dp(26).toFloat(), p.y + dp(26).toFloat())
     }
 
     private fun dismissMenu() { menuView?.let { root?.removeView(it) }; menuView = null }
