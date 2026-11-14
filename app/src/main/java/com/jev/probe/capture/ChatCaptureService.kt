@@ -1041,7 +1041,7 @@ open class ChatCaptureService : AccessibilityService() {
         val dispatched = runCatching {
             dispatchGesture(gesture, object : GestureResultCallback() {
                 override fun onCompleted(gestureDescription: GestureDescription) {
-                    main.postDelayed({ tapPasteItem() }, 450)
+                    main.postDelayed({ tapPasteItem(text) }, 550)
                 }
                 override fun onCancelled(gestureDescription: GestureDescription) {
                     overlay?.toast("已复制，长按输入框粘贴")
@@ -1051,7 +1051,7 @@ open class ChatCaptureService : AccessibilityService() {
         if (!dispatched) overlay?.toast("已复制，长按输入框粘贴")
     }
 
-    private fun tapPasteItem() {
+    private fun tapPasteItem(draft: String) {
         screenCapture.capture { r ->
             if (r !is ScreenCapture.Result.Ok) {
                 overlay?.toast("已复制，长按输入框粘贴")
@@ -1061,10 +1061,23 @@ open class ChatCaptureService : AccessibilityService() {
             val h = resources.displayMetrics.heightPixels
             ocr.recognize(bmp, null) { lines ->
                 runCatching { bmp.recycle() }
-                val hit = lines.firstOrNull {
+                // 1) The system's own "粘贴" item, if WeChat managed to show it.
+                // 2) Otherwise the IME's clipboard suggestion strip: it sits just
+                //    above the keyboard and starts with the draft we just copied.
+                //    Tapping that row pastes, which is how this works on Sogou /
+                //    Gboard / vivo input methods that swallow the long-press menu.
+                val pasteLabel = lines.firstOrNull {
                     val t = it.text.trim()
                     (t == "粘贴" || t.startsWith("粘贴")) && it.bounds.top > h * 0.35f
                 }
+                val hint = draft.take(8).filterNot { it.isWhitespace() }
+                val suggestion = if (hint.length >= 3) lines.firstOrNull {
+                    val t = it.text.trim().filterNot { c -> c.isWhitespace() }
+                    it !== pasteLabel &&
+                        it.bounds.top in (h * 0.30f).toInt()..(h * 0.62f).toInt() &&
+                        t.length >= 3 && (hint.startsWith(t.take(4)) || t.contains(hint.take(5)))
+                } else null
+                val hit = pasteLabel ?: suggestion
                 if (hit == null) {
                     overlay?.toast("已复制，长按输入框粘贴")
                     return@recognize
