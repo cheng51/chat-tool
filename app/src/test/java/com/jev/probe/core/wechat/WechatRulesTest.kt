@@ -12,6 +12,7 @@ class WechatRulesTest {
         override val className: String? = null,
         override val viewId: String? = null,
         override val text: String? = null,
+        override val contentDescription: String? = null,
         override val isEditable: Boolean = false,
         override val isScrollable: Boolean = false,
         override val bounds: IntArray = intArrayOf(0, 0, 0, 0),
@@ -23,6 +24,9 @@ class WechatRulesTest {
 
     private fun leaf(text: String, l: Int, t: Int, r: Int, b: Int) =
         Fake(text = text, bounds = intArrayOf(l, t, r, b))
+
+    private fun described(desc: String, l: Int, t: Int, r: Int, b: Int) =
+        Fake(className = "android.view.View", contentDescription = desc, bounds = intArrayOf(l, t, r, b))
 
     private val width = 1080
     private val height = 2400
@@ -84,6 +88,21 @@ class WechatRulesTest {
         )
         val snap = WechatRules.read(root, width, height)
         assertTrue(snap != null && snap.messages.isEmpty())
+    }
+
+    @Test
+    fun `body exposed only as contentDescription is still read`() {
+        val list = Fake(
+            isScrollable = true,
+            bounds = intArrayOf(0, 200, 1080, 2100),
+            children = listOf(described("在吗？", 130, 300, 400, 380))
+        )
+        val root = Fake(
+            bounds = intArrayOf(0, 0, 1080, 2400),
+            children = listOf(list, Fake(isEditable = true, bounds = intArrayOf(100, 2150, 900, 2300)))
+        )
+        val snap = WechatRules.read(root, width, height)
+        assertEquals("在吗？", snap?.messages?.first()?.text)
     }
 
     @Test

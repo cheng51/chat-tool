@@ -31,6 +31,7 @@ internal interface WxNode {
     val className: String?
     val viewId: String?
     val text: String?
+    val contentDescription: String?
     val isEditable: Boolean
     val isScrollable: Boolean
     /** left, top, right, bottom in screen coordinates. */
@@ -70,6 +71,23 @@ internal object WechatRules {
      *         tree carried no readable body" — the caller's cue for the OCR
      *         fallback.
      */
+    /** Some WeChat builds expose a bubble body as text, others as contentDescription. */
+    private fun bodyOf(node: WxNode): String? {
+        val t = node.text?.toString()?.trim()
+        if (!t.isNullOrEmpty()) return t
+        val d = node.contentDescription?.toString()?.trim()
+        return if (!d.isNullOrEmpty()) d else null
+    }
+
+    /** True when no child carries its own body (i.e. this node is the message itself). */
+    private fun hasNoTextChild(node: WxNode): Boolean {
+        for (i in 0 until node.childCount) {
+            val c = node.child(i) ?: continue
+            if (!bodyOf(c).isNullOrEmpty()) return false
+        }
+        return true
+    }
+
     fun read(root: WxNode, width: Int, height: Int): WxSnapshot? {
         if (width <= 0 || height <= 0) return null
 
@@ -112,7 +130,7 @@ internal object WechatRules {
             .asSequence()
             .filter { it.childCount == 0 }
             .mapNotNull { w ->
-                val t = w.text?.trim()
+                val t = bodyOf(w)
                 if (t.isNullOrEmpty() || t.length > 24 || TIMESTAMP.matches(t)) return@mapNotNull null
                 val b = w.bounds
                 val cx = (b[0] + b[2]) / 2
@@ -126,9 +144,11 @@ internal object WechatRules {
         // 4. Bodies. Leaf text nodes inside the list band only.
         val rows = ArrayList<Row>(64)
         for (node in nodes) {
-            if (node.childCount != 0) continue
-            val raw = node.text?.toString()?.trim()
-            if (raw.isNullOrEmpty()) continue
+            if (node.isEditable) continue
+            val cls = node.className.orEmpty()
+            if (cls.endsWith("EditText") || cls.endsWith("Button") || cls.endsWith("ImageView")) continue
+            if (!hasNoTextChild(node)) continue
+            val raw = bodyOf(node) ?: continue
             if (TIMESTAMP.matches(raw) || DURATION.matches(raw) ||
                 raw in SYSTEM_LINES || SYSTEM_FRAGMENTS.any { raw.contains(it) }
             ) continue
