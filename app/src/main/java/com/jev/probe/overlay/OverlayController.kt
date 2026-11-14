@@ -72,6 +72,9 @@ class OverlayController(private val ctx: Context) {
     /** "换一组" / retry: draft a new set of candidates for the same judgment. */
     var onRegenerate: (() -> Unit)? = null
 
+    /** Menu → dump the foreground accessibility tree for calibration. */
+    var onDumpTree: (() -> Unit)? = null
+
     /** Menu → file the open conversation as a knowledge-base contact. */
     var onSaveContact: (() -> Unit)? = null
 
@@ -297,6 +300,7 @@ class OverlayController(private val ctx: Context) {
         }
         menu.addView(menuItem("截屏识别一次") { dismissMenu(); onOcrCapture?.invoke() })
         menu.addView(menuItem("把当前会话存为联系人") { dismissMenu(); onSaveContact?.invoke() })
+        menu.addView(menuItem("导出控件树") { dismissMenu(); onDumpTree?.invoke() })
         menu.addView(menuItem("打开设置") { dismissMenu(); openSettings() })
         menu.addView(menuItem("隐藏助手（本次）") { hide() })
         menu.addView(menuItem("取消") { dismissMenu() })

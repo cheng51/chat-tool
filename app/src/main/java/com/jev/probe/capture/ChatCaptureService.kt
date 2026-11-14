@@ -1,13 +1,16 @@
 package com.jev.probe.capture
 
 import android.accessibilityservice.AccessibilityService
+import android.content.ContentValues
 import android.content.SharedPreferences
 import android.graphics.Bitmap
 import android.graphics.Rect
 import android.os.Bundle
+import android.os.Environment
 import android.os.Handler
 import android.os.Looper
 import android.os.SystemClock
+import android.provider.MediaStore
 import android.util.Log
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
@@ -268,6 +271,7 @@ open class ChatCaptureService : AccessibilityService() {
         }
         // Bubble menu: one manual screenshot + OCR, for any app at all.
         overlay?.onOcrCapture = { ocrCaptureManual() }
+        overlay?.onDumpTree = { dumpAccessibilityTree() }
         // Keep the process at foreground importance so MIUI does not freeze us.
         runCatching { KeepAliveService.start(this) }
         // Load the bundled OCR model now, off the main thread: the first
@@ -809,6 +813,72 @@ open class ChatCaptureService : AccessibilityService() {
         }
     }
 
+    /**
+     * Diagnostic: write the foreground window's accessibility tree to
+     * Download/DSH-Go so a capture rule can be calibrated against the real
+     * layout. Never sent anywhere; the user shares the file by hand.
+     */
+    private fun dumpAccessibilityTree() {
+        val root = rootInActiveWindow ?: run { overlay?.toast("当前窗口读不到"); return }
+        val pkg = root.packageName?.toString().orEmpty()
+        submit {
+            val m = resources.displayMetrics
+            val sb = StringBuilder()
+            sb.append("# pkg=").append(pkg)
+                .append(" windowId=").append(root.windowId)
+                .append(" screen=").append(m.widthPixels).append('x').append(m.heightPixels)
+                .append('\n')
+            var count = 0
+            fun walk(node: AccessibilityNodeInfo, depth: Int) {
+                if (depth > 40 || count > 6000 || sb.length > 900_000) return
+                count++
+                val b = Rect(); node.getBoundsInScreen(b)
+                repeat(depth) { sb.append("  ") }
+                sb.append(node.className?.toString()?.substringAfterLast('.') ?: "?")
+                sb.append(" id=").append(node.viewIdResourceName ?: "-")
+                node.text?.let { sb.append(" text=\"").append(it.toString().replace("\n", "\\n").take(300)).append('"') }
+                node.contentDescription?.let { sb.append(" desc=\"").append(it.toString().replace("\n", "\\n").take(300)).append('"') }
+                sb.append(" [").append(b.left).append(',').append(b.top).append("][")
+                    .append(b.right).append(',').append(b.bottom).append(']')
+                if (node.isEditable) sb.append(" editable")
+                if (node.isScrollable) sb.append(" scrollable")
+                if (node.isClickable) sb.append(" clickable")
+                if (!node.isVisibleToUser) sb.append(" invisible")
+                sb.append('\n')
+                for (i in 0 until node.childCount) node.getChild(i)?.let { walk(it, depth + 1) }
+            }
+            try {
+                walk(root, 0)
+                sb.append("# nodes=").append(count).append('\n')
+                val name = "dump-" + pkg.replace('.', '_') + "-" + System.currentTimeMillis() + ".txt"
+                val saved = saveDumpToDownloads(name, sb.toString())
+                main.post {
+                    overlay?.toast(if (saved) "已保存到 下载/DSH-Go/$name" else "保存失败")
+                }
+                Log.i(TAG, "tree dumped pkg=$pkg nodes=$count saved=$saved")
+            } catch (e: Exception) {
+                main.post { overlay?.toast("导出失败：" + e.message) }
+            }
+        }
+    }
+
+    /** MediaStore write so the file lands somewhere the user (and other apps) can reach. */
+    private fun saveDumpToDownloads(name: String, text: String): Boolean = try {
+        val values = ContentValues().apply {
+            put(MediaStore.MediaColumns.DISPLAY_NAME, name)
+            put(MediaStore.MediaColumns.MIME_TYPE, "text/plain")
+            put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS + "/DSH-Go")
+        }
+        val uri = contentResolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values)
+        uri != null && contentResolver.openOutputStream(uri)?.use {
+            it.write(text.toByteArray(Charsets.UTF_8))
+            true
+        } == true
+    } catch (e: Exception) {
+        Log.w(TAG, "dump save failed: ${e.javaClass.simpleName}")
+        false
+    }
+
     /** Resolve only the originating chat's input, never an arbitrary foreground editor. */
     private fun inputFor(token: ConversationSession.Token): AccessibilityNodeInfo? {
         if (!isCurrent(token)) return null
@@ -925,7 +995,7 @@ open class ChatCaptureService : AccessibilityService() {
          *  No adapter, no capture, only a one-time "not supported" notice. */
         /** Supported apps that are read through the node tree only and never
          *  screenshotted: no OCR fallback, no manual "截屏识别一次". */
-        private val NO_SCREENSHOT_PKGS = setOf(WhatsAppRules.PACKAGE)
+        private val NO_SCREENSHOT_PKGS = setOf(WhatsAppRules.PACKAGE, "com.tencent.mm")
 
         private val BLOCKED_PKGS = setOf("cn.soulapp.android")
 
