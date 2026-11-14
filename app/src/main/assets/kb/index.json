@@ -1,0 +1,604 @@
+[
+ {
+  "id": "kn-01-证据分级与内容边界",
+  "title": "01-证据分级与内容边界",
+  "file": "kn-01-证据分级与内容边界.md",
+  "kind": "knowledge",
+  "tags": [
+   "intimacy",
+   "law",
+   "comm",
+   "boundary",
+   "conflict"
+  ],
+  "chars": 1971
+ },
+ {
+  "id": "kn-02-亲密关系心理学总论",
+  "title": "02-亲密关系心理学总论",
+  "file": "kn-02-亲密关系心理学总论.md",
+  "kind": "knowledge",
+  "tags": [
+   "intimacy",
+   "reciprocity",
+   "comfort",
+   "marriage",
+   "law"
+  ],
+  "chars": 2439
+ },
+ {
+  "id": "kn-03-依恋理论与情绪调节",
+  "title": "03-依恋理论与情绪调节",
+  "file": "kn-03-依恋理论与情绪调节.md",
+  "kind": "knowledge",
+  "tags": [
+   "attachment",
+   "comfort",
+   "law",
+   "intimacy",
+   "boundary"
+  ],
+  "chars": 1708
+ },
+ {
+  "id": "kn-04-MBTI人格与匹配",
+  "title": "04-MBTI人格与匹配",
+  "file": "kn-04-MBTI人格与匹配.md",
+  "kind": "knowledge",
+  "tags": [
+   "mbti",
+   "intimacy",
+   "comfort",
+   "conflict",
+   "comm"
+  ],
+  "chars": 1856
+ },
+ {
+  "id": "kn-05-PUA操控与伦理替代",
+  "title": "05-PUA操控与伦理替代",
+  "file": "kn-05-PUA操控与伦理替代.md",
+  "kind": "knowledge",
+  "tags": [
+   "pua",
+   "intimacy",
+   "boundary",
+   "law",
+   "reciprocity"
+  ],
+  "chars": 2378
+ },
+ {
+  "id": "kn-06-吸引约会与关系启动",
+  "title": "06-吸引约会与关系启动",
+  "file": "kn-06-吸引约会与关系启动.md",
+  "kind": "knowledge",
+  "tags": [
+   "boundary",
+   "invite",
+   "intimacy",
+   "reciprocity",
+   "comm"
+  ],
+  "chars": 2147
+ },
+ {
+  "id": "kn-07-沟通冲突与修复",
+  "title": "07-沟通冲突与修复",
+  "file": "kn-07-沟通冲突与修复.md",
+  "kind": "knowledge",
+  "tags": [
+   "comm",
+   "conflict",
+   "intimacy",
+   "comfort",
+   "boundary"
+  ],
+  "chars": 1945
+ },
+ {
+  "id": "kn-08-同意边界性与亲密",
+  "title": "08-同意边界性与亲密",
+  "file": "kn-08-同意边界性与亲密.md",
+  "kind": "knowledge",
+  "tags": [
+   "intimacy",
+   "boundary",
+   "law",
+   "comm",
+   "breakup"
+  ],
+  "chars": 1823
+ },
+ {
+  "id": "kn-09-在线约会与数字关系",
+  "title": "09-在线约会与数字关系",
+  "file": "kn-09-在线约会与数字关系.md",
+  "kind": "knowledge",
+  "tags": [
+   "online",
+   "boundary",
+   "invite",
+   "intimacy",
+   "comm"
+  ],
+  "chars": 2824
+ },
+ {
+  "id": "kn-10-恋爱哲学",
+  "title": "10-恋爱哲学",
+  "file": "kn-10-恋爱哲学.md",
+  "kind": "knowledge",
+  "tags": [
+   "philosophy",
+   "intimacy",
+   "marriage",
+   "boundary",
+   "conflict"
+  ],
+  "chars": 1957
+ },
+ {
+  "id": "kn-11-婚姻家庭与生命周期",
+  "title": "11-婚姻家庭与生命周期",
+  "file": "kn-11-婚姻家庭与生命周期.md",
+  "kind": "knowledge",
+  "tags": [
+   "marriage",
+   "intimacy",
+   "law",
+   "boundary",
+   "conflict"
+  ],
+  "chars": 2021
+ },
+ {
+  "id": "kn-12-金钱家务育儿与双方家庭",
+  "title": "12-金钱家务育儿与双方家庭",
+  "file": "kn-12-金钱家务育儿与双方家庭.md",
+  "kind": "knowledge",
+  "tags": [
+   "marriage",
+   "boundary",
+   "conflict",
+   "philosophy",
+   "comfort"
+  ],
+  "chars": 2052
+ },
+ {
+  "id": "kn-13-现代婚姻变迁史",
+  "title": "13-现代婚姻变迁史",
+  "file": "kn-13-现代婚姻变迁史.md",
+  "kind": "knowledge",
+  "tags": [
+   "marriage",
+   "intimacy",
+   "philosophy",
+   "law",
+   "conflict"
+  ],
+  "chars": 2237
+ },
+ {
+  "id": "kn-14-社会发展与家庭变迁",
+  "title": "14-社会发展与家庭变迁",
+  "file": "kn-14-社会发展与家庭变迁.md",
+  "kind": "knowledge",
+  "tags": [
+   "marriage",
+   "intimacy",
+   "law",
+   "comfort",
+   "conflict"
+  ],
+  "chars": 2326
+ },
+ {
+  "id": "kn-15-分手背叛与关系修复",
+  "title": "15-分手背叛与关系修复",
+  "file": "kn-15-分手背叛与关系修复.md",
+  "kind": "knowledge",
+  "tags": [
+   "breakup",
+   "law",
+   "conflict",
+   "intimacy",
+   "boundary"
+  ],
+  "chars": 1979
+ },
+ {
+  "id": "kn-16-多元关系与反刻板印象",
+  "title": "16-多元关系与反刻板印象",
+  "file": "kn-16-多元关系与反刻板印象.md",
+  "kind": "knowledge",
+  "tags": [
+   "intimacy",
+   "diversity",
+   "marriage",
+   "comfort",
+   "boundary"
+  ],
+  "chars": 2009
+ },
+ {
+  "id": "kn-17-中国法律安全与危机转介",
+  "title": "17-中国法律安全与危机转介",
+  "file": "kn-17-中国法律安全与危机转介.md",
+  "kind": "knowledge",
+  "tags": [
+   "law",
+   "marriage",
+   "intimacy",
+   "comm",
+   "philosophy"
+  ],
+  "chars": 2232
+ },
+ {
+  "id": "kn-18-实用练习与对话卡",
+  "title": "18-实用练习与对话卡",
+  "file": "kn-18-实用练习与对话卡.md",
+  "kind": "knowledge",
+  "tags": [
+   "intimacy",
+   "marriage",
+   "law",
+   "conflict",
+   "boundary"
+  ],
+  "chars": 1839
+ },
+ {
+  "id": "kn-19-核心书单与论文索引",
+  "title": "19-核心书单与论文索引",
+  "file": "kn-19-核心书单与论文索引.md",
+  "kind": "knowledge",
+  "tags": [
+   "intimacy",
+   "marriage",
+   "philosophy",
+   "comfort",
+   "mbti"
+  ],
+  "chars": 5090
+ },
+ {
+  "id": "kn-20-经典社交体系的机制-证据与风险边界",
+  "title": "20-经典社交体系的机制、证据与风险边界",
+  "file": "kn-20-经典社交体系的机制-证据与风险边界.md",
+  "kind": "knowledge",
+  "tags": [
+   "boundary",
+   "pua",
+   "comm",
+   "intimacy",
+   "reciprocity"
+  ],
+  "chars": 4280
+ },
+ {
+  "id": "pr-00-导读与使用分级",
+  "title": "00-导读与使用分级",
+  "file": "pr-00-导读与使用分级.md",
+  "kind": "practical",
+  "tags": [
+   "comm",
+   "reciprocity",
+   "boundary",
+   "intimacy",
+   "comfort"
+  ],
+  "chars": 2122
+ },
+ {
+  "id": "pr-ChatLab聊天记录分析适配",
+  "title": "ChatLab聊天记录分析适配",
+  "file": "pr-ChatLab聊天记录分析适配.md",
+  "kind": "practical",
+  "tags": [
+   "comm",
+   "intimacy",
+   "boundary",
+   "conflict",
+   "reciprocity"
+  ],
+  "chars": 2156
+ },
+ {
+  "id": "pr-万能吵架技巧-理性冲突处理指南",
+  "title": "万能吵架技巧：理性冲突处理指南",
+  "file": "pr-万能吵架技巧-理性冲突处理指南.md",
+  "kind": "practical",
+  "tags": [
+   "conflict",
+   "comm",
+   "comfort",
+   "intimacy",
+   "boundary"
+  ],
+  "chars": 2460
+ },
+ {
+  "id": "pr-万能夸人的话术技巧-真诚认可的实用指南",
+  "title": "万能夸人的话术技巧：真诚认可的实用指南",
+  "file": "pr-万能夸人的话术技巧-真诚认可的实用指南.md",
+  "kind": "practical",
+  "tags": [
+   "comm",
+   "reciprocity",
+   "comfort",
+   "intimacy",
+   "boundary"
+  ],
+  "chars": 4134
+ },
+ {
+  "id": "pr-为他人提供情绪价值-温暖且有效的回应指南",
+  "title": "为他人提供情绪价值：温暖且有效的回应指南",
+  "file": "pr-为他人提供情绪价值-温暖且有效的回应指南.md",
+  "kind": "practical",
+  "tags": [
+   "comfort",
+   "attachment",
+   "comm",
+   "reciprocity",
+   "conflict"
+  ],
+  "chars": 4385
+ },
+ {
+  "id": "pr-主动表达-第一次见面与自然接触",
+  "title": "主动表达、第一次见面与自然接触",
+  "file": "pr-主动表达-第一次见面与自然接触.md",
+  "kind": "practical",
+  "tags": [
+   "invite",
+   "reciprocity",
+   "comm",
+   "boundary",
+   "intimacy"
+  ],
+  "chars": 2413
+ },
+ {
+  "id": "pr-公开表达案例的伦理转译",
+  "title": "公开表达案例的伦理转译",
+  "file": "pr-公开表达案例的伦理转译.md",
+  "kind": "practical",
+  "tags": [
+   "comm",
+   "boundary",
+   "comfort",
+   "reciprocity",
+   "breakup"
+  ],
+  "chars": 994
+ },
+ {
+  "id": "pr-关系投入失衡-互惠判断-降级投入与退出决策",
+  "title": "关系投入失衡：互惠判断、降级投入与退出决策",
+  "file": "pr-关系投入失衡-互惠判断-降级投入与退出决策.md",
+  "kind": "practical",
+  "tags": [
+   "reciprocity",
+   "boundary",
+   "conflict",
+   "intimacy",
+   "comm"
+  ],
+  "chars": 2618
+ },
+ {
+  "id": "pr-化解尴尬-轻松救场的实用指南",
+  "title": "化解尴尬：轻松救场的实用指南",
+  "file": "pr-化解尴尬-轻松救场的实用指南.md",
+  "kind": "practical",
+  "tags": [
+   "comm",
+   "comfort",
+   "conflict",
+   "reciprocity",
+   "intimacy"
+  ],
+  "chars": 3820
+ },
+ {
+  "id": "pr-场景感-松弛感与社交校准-从接话到关系推进",
+  "title": "场景感、松弛感与社交校准：从接话到关系推进",
+  "file": "pr-场景感-松弛感与社交校准-从接话到关系推进.md",
+  "kind": "practical",
+  "tags": [
+   "intimacy",
+   "comm",
+   "comfort",
+   "boundary",
+   "reciprocity"
+  ],
+  "chars": 2785
+ },
+ {
+  "id": "pr-实战话术编排器-从一句回复到后续分支",
+  "title": "实战话术编排器：从一句回复到后续分支",
+  "file": "pr-实战话术编排器-从一句回复到后续分支.md",
+  "kind": "practical",
+  "tags": [
+   "boundary",
+   "comfort",
+   "reciprocity",
+   "invite",
+   "intimacy"
+  ],
+  "chars": 3643
+ },
+ {
+  "id": "pr-巧妙接话技巧-让沟通更流畅的实用指南",
+  "title": "巧妙接话技巧：让沟通更流畅的实用指南",
+  "file": "pr-巧妙接话技巧-让沟通更流畅的实用指南.md",
+  "kind": "practical",
+  "tags": [
+   "comm",
+   "comfort",
+   "conflict",
+   "intimacy",
+   "boundary"
+  ],
+  "chars": 3938
+ },
+ {
+  "id": "pr-废话文学回复指南-轻松应对各类场景",
+  "title": "废话文学回复指南：轻松应对各类场景",
+  "file": "pr-废话文学回复指南-轻松应对各类场景.md",
+  "kind": "practical",
+  "tags": [
+   "comm",
+   "boundary",
+   "comfort",
+   "attachment",
+   "intimacy"
+  ],
+  "chars": 2802
+ },
+ {
+  "id": "pr-托人办事的高效话术指南",
+  "title": "托人办事的高效话术指南",
+  "file": "pr-托人办事的高效话术指南.md",
+  "kind": "practical",
+  "tags": [
+   "comm",
+   "boundary",
+   "comfort",
+   "intimacy",
+   "reciprocity"
+  ],
+  "chars": 2766
+ },
+ {
+  "id": "pr-提升表达逻辑性-从混乱到清晰的实用指南",
+  "title": "提升表达逻辑性：从混乱到清晰的实用指南",
+  "file": "pr-提升表达逻辑性-从混乱到清晰的实用指南.md",
+  "kind": "practical",
+  "tags": [
+   "comm",
+   "intimacy",
+   "boundary",
+   "reciprocity",
+   "mbti"
+  ],
+  "chars": 4810
+ },
+ {
+  "id": "pr-提高气场-从内到外的力量感塑造指南",
+  "title": "提高气场：从内到外的力量感塑造指南",
+  "file": "pr-提高气场-从内到外的力量感塑造指南.md",
+  "kind": "practical",
+  "tags": [
+   "comm",
+   "boundary",
+   "comfort",
+   "reciprocity",
+   "intimacy"
+  ],
+  "chars": 3564
+ },
+ {
+  "id": "pr-有效拓展人脉-从建立到维护的实用指南",
+  "title": "有效拓展人脉：从建立到维护的实用指南",
+  "file": "pr-有效拓展人脉-从建立到维护的实用指南.md",
+  "kind": "practical",
+  "tags": [
+   "comm",
+   "invite",
+   "mbti",
+   "boundary",
+   "reciprocity"
+  ],
+  "chars": 4042
+ },
+ {
+  "id": "pr-聊天化被动为主动-引导互动的实用指南",
+  "title": "聊天化被动为主动：引导互动的实用指南",
+  "file": "pr-聊天化被动为主动-引导互动的实用指南.md",
+  "kind": "practical",
+  "tags": [
+   "comm",
+   "reciprocity",
+   "boundary",
+   "comfort",
+   "attachment"
+  ],
+  "chars": 4529
+ },
+ {
+  "id": "pr-自然流-内在状态与结构化互动-伦理能力转译",
+  "title": "自然流、内在状态与结构化互动：伦理能力转译",
+  "file": "pr-自然流-内在状态与结构化互动-伦理能力转译.md",
+  "kind": "practical",
+  "tags": [
+   "pua",
+   "boundary",
+   "comm",
+   "comfort",
+   "invite"
+  ],
+  "chars": 2775
+ },
+ {
+  "id": "pr-获得领导青睐-从价值匹配到信任建立的实用指南",
+  "title": "获得领导青睐：从价值匹配到信任建立的实用指南",
+  "file": "pr-获得领导青睐-从价值匹配到信任建立的实用指南.md",
+  "kind": "practical",
+  "tags": [
+   "reciprocity",
+   "comm",
+   "mbti",
+   "intimacy",
+   "boundary"
+  ],
+  "chars": 3454
+ },
+ {
+  "id": "pr-被孤立如何破局-从自我调适到建立连接的实用指南",
+  "title": "被孤立如何破局：从自我调适到建立连接的实用指南",
+  "file": "pr-被孤立如何破局-从自我调适到建立连接的实用指南.md",
+  "kind": "practical",
+  "tags": [
+   "reciprocity",
+   "comm",
+   "boundary",
+   "comfort",
+   "attachment"
+  ],
+  "chars": 3491
+ },
+ {
+  "id": "pr-长期记忆与关系档案",
+  "title": "长期记忆与关系档案",
+  "file": "pr-长期记忆与关系档案.md",
+  "kind": "practical",
+  "tags": [
+   "mbti",
+   "intimacy",
+   "conflict",
+   "invite",
+   "comm"
+  ],
+  "chars": 2866
+ },
+ {
+  "id": "pr-高情商拒绝他人-体面护边界的实用指南",
+  "title": "高情商拒绝他人：体面护边界的实用指南",
+  "file": "pr-高情商拒绝他人-体面护边界的实用指南.md",
+  "kind": "practical",
+  "tags": [
+   "boundary",
+   "comm",
+   "comfort",
+   "conflict",
+   "reciprocity"
+  ],
+  "chars": 4715
+ }
+]
