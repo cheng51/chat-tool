@@ -1,9 +1,11 @@
 package com.jev.probe.capture
 
 import android.accessibilityservice.AccessibilityService
+import android.accessibilityservice.GestureDescription
 import android.content.ContentValues
 import android.content.SharedPreferences
 import android.graphics.Bitmap
+import android.graphics.Path
 import android.graphics.Rect
 import android.os.Bundle
 import android.os.Environment
@@ -750,34 +752,52 @@ open class ChatCaptureService : AccessibilityService() {
             .sortedBy { it.bounds.top }
         val out = ArrayList<Msg>()
         val buf = StringBuilder()
+        var blockLeft = Int.MAX_VALUE
+        var blockRight = 0
         var prev: OcrLine? = null
+
+        fun flush() {
+            if (buf.isEmpty()) return
+            out.add(Msg(sideOfBlock(blockLeft, blockRight, pkg), buf.toString()))
+            buf.setLength(0)
+            blockLeft = Int.MAX_VALUE
+            blockRight = 0
+        }
+
         for (l in usable) {
             val p = prev
             if (p != null) {
                 val gap = l.bounds.top - p.bounds.bottom
                 val lineHeight = maxOf(p.bounds.height(), 1)
-                if (gap > lineHeight * 1.2f) {
-                    if (buf.isNotEmpty()) { out.add(Msg(sideOf(p, pkg), buf.toString())); buf.setLength(0) }
-                }
+                if (gap > lineHeight * 1.2f) flush()
             }
             if (buf.isNotEmpty()) buf.append(' ')
             buf.append(l.text.trim())
+            blockLeft = minOf(blockLeft, l.bounds.left)
+            blockRight = maxOf(blockRight, l.bounds.right)
             prev = l
         }
-        if (buf.isNotEmpty()) out.add(Msg(sideOf(prev, pkg), buf.toString()))
+        flush()
         return out
     }
 
     /**
-     * Whole-screen OCR has no node geometry, so the side comes from where the
-     * words sit: a bubble hugging the right half is mine. Only WeChat does this
-     * — the other OCR paths (Feishu) genuinely cannot tell, and say so.
+     * Whole-screen OCR has no node geometry, so the side comes from which side of
+     * the screen the text block hugs. Comparing the distance to each margin (the
+     * same idea the QQ/WeChat node rules use) beats "is the centre past the
+     * middle": a long incoming message easily crosses the middle, and a short
+     * outgoing one may not reach it.
+     *
+     * Only WeChat does this. The other OCR paths (Feishu) genuinely cannot tell
+     * and keep saying so in the panel note.
      */
-    private fun sideOf(line: OcrLine?, pkg: String): String {
-        if (line == null || pkg != "com.tencent.mm") return "other"
-        val w = resources.displayMetrics.widthPixels
-        val center = line.bounds.centerX()
-        return if (center > w * 0.55f) "me" else "other"
+    private fun sideOfBlock(left: Int, right: Int, pkg: String): String {
+        if (pkg != "com.tencent.mm" || left == Int.MAX_VALUE || right <= left) return "other"
+        val w = resources.displayMetrics.widthPixels.toFloat()
+        // Bubbles sit inside the avatar columns; text starts a little further in.
+        val dl = (left - w * 0.06f).coerceAtLeast(0f)
+        val dr = (w * 0.94f - right).coerceAtLeast(0f)
+        return if (dr < dl) "me" else "other"
     }
 
     /** Strip the read receipt and the timestamp Feishu glues onto a bubble. */
@@ -978,7 +998,12 @@ open class ChatCaptureService : AccessibilityService() {
             else { copyToClipboard(text); overlay?.toast("已复制，长按输入框粘贴") }
         }
         if (!isCurrent(token)) { overlay?.toast("会话已变化，请重新分析后填入"); return }
-        if (inputFor(token) == null) { finish(false); return }
+        if (inputFor(token) == null) {
+            // WeChat hides its window from accessibility: there is no node to
+            // write into, so fall back to the clipboard + a real long-press.
+            if (token.target.pkg == WeChatAdapter.PKG) { pasteByGesture(text); return }
+            finish(false); return
+        }
         GuardedInputWriter(
             resolve = {
                 inputFor(token)?.let { node ->
@@ -994,6 +1019,67 @@ open class ChatCaptureService : AccessibilityService() {
             copy = { copyToClipboard(it) },
             complete = { finish(it) }
         ).fill(text)
+    }
+
+    /**
+     * WeChat has no readable composer node, so ACTION_SET_TEXT has nowhere to
+     * land. Put the draft on the clipboard, long-press where the composer sits,
+     * recognise the "粘贴" item the system then shows, and tap it.
+     *
+     * Every failure path stops at "已复制，长按输入框粘贴" — we only tap a menu
+     * item we actually recognised on screen, never a guessed coordinate over the
+     * conversation.
+     */
+    private fun pasteByGesture(text: String) {
+        copyToClipboard(text)
+        val w = resources.displayMetrics.widthPixels
+        val h = resources.displayMetrics.heightPixels
+        val path = Path().apply { moveTo(w / 2f, h * 0.935f) }
+        val gesture = GestureDescription.Builder()
+            .addStroke(GestureDescription.StrokeDescription(path, 0, 700))
+            .build()
+        val dispatched = runCatching {
+            dispatchGesture(gesture, object : GestureResultCallback() {
+                override fun onCompleted(gestureDescription: GestureDescription) {
+                    main.postDelayed({ tapPasteItem() }, 450)
+                }
+                override fun onCancelled(gestureDescription: GestureDescription) {
+                    overlay?.toast("已复制，长按输入框粘贴")
+                }
+            }, null)
+        }.getOrDefault(false)
+        if (!dispatched) overlay?.toast("已复制，长按输入框粘贴")
+    }
+
+    private fun tapPasteItem() {
+        screenCapture.capture { r ->
+            if (r !is ScreenCapture.Result.Ok) {
+                overlay?.toast("已复制，长按输入框粘贴")
+                return@capture
+            }
+            val bmp = r.bitmap
+            val h = resources.displayMetrics.heightPixels
+            ocr.recognize(bmp, null) { lines ->
+                runCatching { bmp.recycle() }
+                val hit = lines.firstOrNull {
+                    val t = it.text.trim()
+                    (t == "粘贴" || t.startsWith("粘贴")) && it.bounds.top > h * 0.35f
+                }
+                if (hit == null) {
+                    overlay?.toast("已复制，长按输入框粘贴")
+                    return@recognize
+                }
+                val sx = r.originX + hit.bounds.centerX() / r.scaleX
+                val sy = r.originY + hit.bounds.centerY() / r.scaleY
+                val p = Path().apply { moveTo(sx, sy) }
+                val tap = GestureDescription.Builder()
+                    .addStroke(GestureDescription.StrokeDescription(p, 0, 60))
+                    .build()
+                runCatching { dispatchGesture(tap, null, null) }
+                Log.i(TAG, "paste item tapped at ${sx.toInt()},${sy.toInt()}")
+                overlay?.toast("已粘贴，确认后自己发送")
+            }
+        }
     }
 
     private fun setTextRaw(edit: AccessibilityNodeInfo, text: String): Boolean {
