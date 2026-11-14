@@ -819,47 +819,70 @@ open class ChatCaptureService : AccessibilityService() {
      * layout. Never sent anywhere; the user shares the file by hand.
      */
     private fun dumpAccessibilityTree() {
-        val root = rootInActiveWindow ?: run { overlay?.toast("当前窗口读不到"); return }
-        val pkg = root.packageName?.toString().orEmpty()
+        // Walk synchronously on the main thread: an AccessibilityNodeInfo kept
+        // across threads (or across a window change) comes back as an empty
+        // shell — bounds zero, no children, invisible.
+        val text = try {
+            buildTreeDump()
+        } catch (e: Exception) {
+            Log.w(TAG, "dump failed: ${e.javaClass.simpleName}")
+            null
+        }
+        if (text == null) { overlay?.toast("导出失败，读不到窗口"); return }
+        val name = "dump-" + (foregroundPkg ?: "window") + "-" + System.currentTimeMillis() + ".txt"
         submit {
-            val m = resources.displayMetrics
-            val sb = StringBuilder()
-            sb.append("# pkg=").append(pkg)
-                .append(" windowId=").append(root.windowId)
-                .append(" screen=").append(m.widthPixels).append('x').append(m.heightPixels)
-                .append('\n')
+            val saved = saveDumpToDownloads(name, text)
+            main.post {
+                overlay?.toast(if (saved) "已导出 $name" else "保存失败")
+            }
+            Log.i(TAG, "tree dumped saved=$saved bytes=${text.length}")
+        }
+    }
+
+    private fun buildTreeDump(): String {
+        val m = resources.displayMetrics
+        val sb = StringBuilder()
+        sb.append("# screen=").append(m.widthPixels).append('x').append(m.heightPixels)
+            .append(" active=").append(foregroundPkg ?: "-").append('\n')
+        val roots = LinkedHashMap<String, AccessibilityNodeInfo>()
+        rootInActiveWindow?.let { roots["active"] = it }
+        runCatching {
+            windows.forEachIndexed { i, w ->
+                val r = w.root ?: return@forEachIndexed
+                roots["win$i:type=${w.type}:layer=${w.layer}:pkg=${r.packageName}"] = r
+            }
+        }
+        if (roots.isEmpty()) return "# no window readable\n"
+        var total = 0
+        for ((label, root) in roots) {
+            sb.append("# ---- ").append(label).append('\n')
             var count = 0
+            root.refresh()
             fun walk(node: AccessibilityNodeInfo, depth: Int) {
                 if (depth > 40 || count > 6000 || sb.length > 900_000) return
                 count++
                 val b = Rect(); node.getBoundsInScreen(b)
+                val pkg = node.packageName?.toString()
                 repeat(depth) { sb.append("  ") }
                 sb.append(node.className?.toString()?.substringAfterLast('.') ?: "?")
                 sb.append(" id=").append(node.viewIdResourceName ?: "-")
+                if (pkg != null) sb.append(" pkg=").append(pkg)
                 node.text?.let { sb.append(" text=\"").append(it.toString().replace("\n", "\\n").take(300)).append('"') }
                 node.contentDescription?.let { sb.append(" desc=\"").append(it.toString().replace("\n", "\\n").take(300)).append('"') }
                 sb.append(" [").append(b.left).append(',').append(b.top).append("][")
                     .append(b.right).append(',').append(b.bottom).append(']')
                 if (node.isEditable) sb.append(" editable")
                 if (node.isScrollable) sb.append(" scrollable")
-                if (node.isClickable) sb.append(" clickable")
                 if (!node.isVisibleToUser) sb.append(" invisible")
                 sb.append('\n')
                 for (i in 0 until node.childCount) node.getChild(i)?.let { walk(it, depth + 1) }
             }
-            try {
-                walk(root, 0)
-                sb.append("# nodes=").append(count).append('\n')
-                val name = "dump-" + pkg.replace('.', '_') + "-" + System.currentTimeMillis() + ".txt"
-                val saved = saveDumpToDownloads(name, sb.toString())
-                main.post {
-                    overlay?.toast(if (saved) "已保存到 下载/DSH-Go/$name" else "保存失败")
-                }
-                Log.i(TAG, "tree dumped pkg=$pkg nodes=$count saved=$saved")
-            } catch (e: Exception) {
-                main.post { overlay?.toast("导出失败：" + e.message) }
-            }
+            walk(root, 0)
+            sb.append("# nodes=").append(count).append('\n')
+            total += count
         }
+        if (total <= roots.size) sb.append("# 所有窗口都只有空壳节点：该应用可能对无障碍隐藏了内容\n")
+        return sb.toString()
     }
 
     /** MediaStore write so the file lands somewhere the user (and other apps) can reach. */
