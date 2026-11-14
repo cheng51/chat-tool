@@ -8,3 +8,6 @@ local.properties
 *.p12
 *.apk
 .DS_Store
+
+# 固定调试签名，CI 与本地共用（仅 debug）
+!debug.keystore

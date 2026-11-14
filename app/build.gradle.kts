@@ -23,8 +23,8 @@ android {
         applicationId = "com.chatjunshi.app"
         minSdk = 30
         targetSdk = 35
-        versionCode = 2
-        versionName = "0.1.1"
+        versionCode = 3
+        versionName = "0.1.2"
 
         // ML Kit's bundled Chinese recognizer ships native libs for every ABI.
         // The target phone (and every phone this can run on: minSdk 30) is
@@ -35,6 +35,15 @@ android {
     }
 
     signingConfigs {
+        // Fixed debug key committed to the repo (debug-only, never used for
+        // release). Without this every CI run generates a fresh debug keystore
+        // and each new APK refuses to install over the previous one.
+        create("stableDebug") {
+            storeFile = rootProject.file("debug.keystore")
+            storePassword = "android"
+            keyAlias = "chatjunshi"
+            keyPassword = "android"
+        }
         if (releaseProps.isNotEmpty()) {
             create("release") {
                 storeFile = file(releaseProps.getProperty("storeFile"))
@@ -46,6 +55,9 @@ android {
     }
 
     buildTypes {
+        debug {
+            signingConfig = signingConfigs.getByName("stableDebug")
+        }
         release {
             isMinifyEnabled = false
             signingConfig = signingConfigs.findByName("release")
