@@ -125,7 +125,8 @@ class ScreenCapture(
             watchdog = null
         }
 
-        val cb = object : AccessibilityService.TakeScreenshotCallback {
+        lateinit var cb: AccessibilityService.TakeScreenshotCallback
+        cb = object : AccessibilityService.TakeScreenshotCallback {
             override fun onSuccess(result: AccessibilityService.ScreenshotResult) {
                 disarm()
                 // Already timed out: this result is void. Drop the buffer (never
