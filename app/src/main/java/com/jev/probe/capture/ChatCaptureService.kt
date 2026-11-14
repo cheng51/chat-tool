@@ -737,7 +737,8 @@ open class ChatCaptureService : AccessibilityService() {
             val msgs = groupOcrLines(lines, pkg)
             val title = treeTitle?.takeIf { it.isNotBlank() }
                 ?: lines.firstOrNull()?.text?.trim()?.take(24)
-            finishOcrSnapshot(ChatSnapshot(title, msgs, note = OCR_NOTE), pkg, manual, token)
+            val note = if (pkg == WeChatAdapter.PKG) OCR_NOTE_WECHAT else OCR_NOTE
+            finishOcrSnapshot(ChatSnapshot(title, msgs, note = note), pkg, manual, token)
         }
     }
 
@@ -1032,28 +1033,39 @@ open class ChatCaptureService : AccessibilityService() {
      */
     private fun pasteByGesture(text: String) {
         copyToClipboard(text)
+        overlay?.toast("正在尝试粘贴…")
         val w = resources.displayMetrics.widthPixels
         val h = resources.displayMetrics.heightPixels
-        val path = Path().apply { moveTo(w / 2f, h * 0.935f) }
-        val gesture = GestureDescription.Builder()
-            .addStroke(GestureDescription.StrokeDescription(path, 0, 700))
-            .build()
-        val dispatched = runCatching {
-            dispatchGesture(gesture, object : GestureResultCallback() {
-                override fun onCompleted(gestureDescription: GestureDescription) {
-                    main.postDelayed({ tapPasteItem(text) }, 550)
-                }
-                override fun onCancelled(gestureDescription: GestureDescription) {
-                    overlay?.toast("已复制，长按输入框粘贴")
-                }
-            }, null)
-        }.getOrDefault(false)
-        if (!dispatched) overlay?.toast("已复制，长按输入框粘贴")
+        // The panel covers most of the screen — a touch at the composer would land
+        // on the panel itself. Take it off for the duration of the gesture.
+        overlay?.setHiddenForShot(true)
+        main.postDelayed({
+            val path = Path().apply { moveTo(w / 2f, h * 0.935f) }
+            val gesture = GestureDescription.Builder()
+                .addStroke(GestureDescription.StrokeDescription(path, 0, 700))
+                .build()
+            val dispatched = runCatching {
+                dispatchGesture(gesture, object : GestureResultCallback() {
+                    override fun onCompleted(gestureDescription: GestureDescription) {
+                        main.postDelayed({ tapPasteItem(text) }, 550)
+                    }
+                    override fun onCancelled(gestureDescription: GestureDescription) {
+                        overlay?.setHiddenForShot(false)
+                        overlay?.toast("已复制，长按输入框粘贴")
+                    }
+                }, null)
+            }.getOrDefault(false)
+            if (!dispatched) {
+                overlay?.setHiddenForShot(false)
+                overlay?.toast("已复制，长按输入框粘贴")
+            }
+        }, 200)
     }
 
     private fun tapPasteItem(draft: String) {
         screenCapture.capture { r ->
             if (r !is ScreenCapture.Result.Ok) {
+                overlay?.setHiddenForShot(false)
                 overlay?.toast("已复制，长按输入框粘贴")
                 return@capture
             }
@@ -1079,6 +1091,7 @@ open class ChatCaptureService : AccessibilityService() {
                 } else null
                 val hit = pasteLabel ?: suggestion
                 if (hit == null) {
+                    overlay?.setHiddenForShot(false)
                     overlay?.toast("已复制，长按输入框粘贴")
                     return@recognize
                 }
@@ -1090,6 +1103,7 @@ open class ChatCaptureService : AccessibilityService() {
                     .build()
                 runCatching { dispatchGesture(tap, null, null) }
                 Log.i(TAG, "paste item tapped at ${sx.toInt()},${sy.toInt()}")
+                main.postDelayed({ overlay?.setHiddenForShot(false) }, 250)
                 overlay?.toast("已粘贴，确认后自己发送")
             }
         }
@@ -1185,6 +1199,9 @@ open class ChatCaptureService : AccessibilityService() {
 
         /** Said on the panel whenever a snapshot came from flat-screen OCR. */
         private const val OCR_NOTE = "OCR 未分边，把全部消息当作对方所说"
+
+        /** WeChat's OCR path guesses the side from where each block sits. */
+        private const val OCR_NOTE_WECHAT = "OCR 按位置分边，偶尔会判错"
 
         private val PURE_TIME = Regex("""\d{1,2}[:：]\d{2}""")
         private val TAIL_TIME = Regex("""\d{1,2}[:：]\d{2}$""")
