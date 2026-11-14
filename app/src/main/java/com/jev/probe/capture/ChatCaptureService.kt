@@ -733,8 +733,8 @@ open class ChatCaptureService : AccessibilityService() {
     private fun ocrWholeScreen(bmp: Bitmap, treeTitle: String?, pkg: String, manual: Boolean, token: ConversationSession.Token) {
         val region = Rect(0, (bmp.height * TOP_CROP).toInt(), bmp.width, (bmp.height * BOTTOM_CROP).toInt())
         ocr.recognize(bmp, region) { lines ->
+            val msgs = groupOcrLines(lines, pkg, bmp)
             runCatching { bmp.recycle() }
-            val msgs = groupOcrLines(lines, pkg)
             val title = treeTitle?.takeIf { it.isNotBlank() }
                 ?: lines.firstOrNull()?.text?.trim()?.take(24)
             val note = if (pkg == WeChatAdapter.PKG) OCR_NOTE_WECHAT else OCR_NOTE
@@ -747,7 +747,7 @@ open class ChatCaptureService : AccessibilityService() {
      * starts a new one. Side is unknowable from a flat screen read, so every
      * group is filed as the other person (and [OCR_NOTE] says so on the panel).
      */
-    private fun groupOcrLines(lines: List<OcrLine>, pkg: String): List<Msg> {
+    private fun groupOcrLines(lines: List<OcrLine>, pkg: String, bmp: Bitmap?): List<Msg> {
         val usable = lines
             .filter { it.text.isNotBlank() && !PURE_TIME.matches(it.text.trim()) }
             .sortedBy { it.bounds.top }
@@ -755,14 +755,20 @@ open class ChatCaptureService : AccessibilityService() {
         val buf = StringBuilder()
         var blockLeft = Int.MAX_VALUE
         var blockRight = 0
+        var blockTop = Int.MAX_VALUE
+        var blockBottom = 0
         var prev: OcrLine? = null
 
         fun flush() {
             if (buf.isEmpty()) return
-            out.add(Msg(sideOfBlock(blockLeft, blockRight, pkg), buf.toString()))
+            val side = sideByColor(bmp, blockLeft, blockTop, blockRight, blockBottom, pkg)
+                ?: sideOfBlock(blockLeft, blockRight, pkg)
+            out.add(Msg(side, buf.toString()))
             buf.setLength(0)
             blockLeft = Int.MAX_VALUE
             blockRight = 0
+            blockTop = Int.MAX_VALUE
+            blockBottom = 0
         }
 
         for (l in usable) {
@@ -776,6 +782,8 @@ open class ChatCaptureService : AccessibilityService() {
             buf.append(l.text.trim())
             blockLeft = minOf(blockLeft, l.bounds.left)
             blockRight = maxOf(blockRight, l.bounds.right)
+            blockTop = minOf(blockTop, l.bounds.top)
+            blockBottom = maxOf(blockBottom, l.bounds.bottom)
             prev = l
         }
         flush()
@@ -792,6 +800,49 @@ open class ChatCaptureService : AccessibilityService() {
      * Only WeChat does this. The other OCR paths (Feishu) genuinely cannot tell
      * and keep saying so in the panel note.
      */
+    /**
+     * Reads the bubble colour behind a text block: WeChat paints my bubbles green
+     * and theirs white; QQ paints mine blue. That is far more reliable than any
+     * geometric guess, because the text bounds tell us nothing about alignment
+     * for short messages.
+     *
+     * Returns null when the app is not one of those two, or the bitmap is gone —
+     * the caller then falls back to the margin rule.
+     */
+    private fun sideByColor(
+        bmp: Bitmap?,
+        left: Int, top: Int, right: Int, bottom: Int,
+        pkg: String
+    ): String? {
+        if (bmp == null || bmp.isRecycled) return null
+        if (pkg != "com.tencent.mm" && pkg != "com.tencent.mobileqq") return null
+        if (left == Int.MAX_VALUE || right <= left || bottom <= top) return null
+        val sx = ocr.scaleX; val sy = ocr.scaleY
+        val ox = ocr.originX; val oy = ocr.originY
+        val y = (((top + bottom) / 2 - oy) * sy).toInt().coerceIn(0, bmp.height - 1)
+        // Sample a little inside the bubble padding on both sides of the words.
+        val pad = 26
+        val x0 = (((left - ox) * sx).toInt() - pad).coerceIn(0, bmp.width - 1)
+        val x1 = (((right - ox) * sx).toInt() + pad).coerceIn(0, bmp.width - 1)
+        if (x1 <= x0) return null
+        var coloured = 0
+        var total = 0
+        var x = x0
+        while (x <= x1) {
+            val c = bmp.getPixel(x, y)
+            val r = (c shr 16) and 0xFF
+            val g = (c shr 8) and 0xFF
+            val b = c and 0xFF
+            val green = g > 150 && g > r + 25 && g > b + 35
+            val blue = b > 140 && b > r + 30 && b > g + 10
+            if (green || blue) coloured++
+            total++
+            x += 2
+        }
+        if (total < 8) return null
+        return if (coloured.toFloat() / total >= 0.2f) "me" else "other"
+    }
+
     private fun sideOfBlock(left: Int, right: Int, pkg: String): String {
         if (pkg != "com.tencent.mm" || left == Int.MAX_VALUE || right <= left) return "other"
         val w = resources.displayMetrics.widthPixels.toFloat()
@@ -1201,7 +1252,7 @@ open class ChatCaptureService : AccessibilityService() {
         private const val OCR_NOTE = "OCR 未分边，把全部消息当作对方所说"
 
         /** WeChat's OCR path guesses the side from where each block sits. */
-        private const val OCR_NOTE_WECHAT = "OCR 按位置分边，偶尔会判错"
+        private const val OCR_NOTE_WECHAT = "OCR 按气泡颜色分边：绿=我，白=对方"
 
         private val PURE_TIME = Regex("""\d{1,2}[:：]\d{2}""")
         private val TAIL_TIME = Regex("""\d{1,2}[:：]\d{2}$""")
