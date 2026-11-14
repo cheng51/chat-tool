@@ -23,8 +23,17 @@ class WeChatAdapter : ChatAppAdapter {
 
     override fun extract(root: AccessibilityNodeInfo, res: Resources): ChatSnapshot? {
         val m = res.displayMetrics
-        val snap = WechatRules.read(A11yWxNode(root), m.widthPixels, m.heightPixels) ?: return null
-        return ChatSnapshot(snap.title, snap.messages.map { Msg(it.side, it.text) })
+        val snap = WechatRules.read(A11yWxNode(root), m.widthPixels, m.heightPixels)
+        if (snap != null) return ChatSnapshot(snap.title, snap.messages.map { Msg(it.side, it.text) })
+        // WeChat's chat window reports an empty root node on current builds
+        // (accessibility-data-sensitive window). "No message text" is the cue the
+        // service uses to fall back to a screenshot + local OCR; returning null
+        // here would silently disable WeChat entirely.
+        return if (root.childCount == 0) ChatSnapshot(null, emptyList()) else null
+    }
+
+    companion object {
+        const val PKG = WechatRules.PACKAGE
     }
 
     /** Live accessibility node behind the [WxNode] view the rules read. */

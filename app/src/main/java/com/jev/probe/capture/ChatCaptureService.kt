@@ -170,6 +170,12 @@ open class ChatCaptureService : AccessibilityService() {
             // unbinding the session there killed in-flight analyses. Keep the
             // previously verified title instead.
             val fresh = snapshot.title?.takeUnless { isTransientTitle(it) }
+                // WeChat hides its chat window from accessibility: the tree comes
+                // back empty, so there is no title to read and no per-conversation
+                // identity. A constant label keeps the session alive so the
+                // screenshot+OCR fallback can run; content changes still reset it
+                // through the OCR signature.
+                ?: if (pkg == WeChatAdapter.PKG && snapshot.messages.isEmpty()) "微信会话" else null
             if (fresh != null) fresh
             else {
                 val known = session.target
@@ -726,7 +732,7 @@ open class ChatCaptureService : AccessibilityService() {
         val region = Rect(0, (bmp.height * TOP_CROP).toInt(), bmp.width, (bmp.height * BOTTOM_CROP).toInt())
         ocr.recognize(bmp, region) { lines ->
             runCatching { bmp.recycle() }
-            val msgs = groupOcrLines(lines)
+            val msgs = groupOcrLines(lines, pkg)
             val title = treeTitle?.takeIf { it.isNotBlank() }
                 ?: lines.firstOrNull()?.text?.trim()?.take(24)
             finishOcrSnapshot(ChatSnapshot(title, msgs, note = OCR_NOTE), pkg, manual, token)
@@ -738,7 +744,7 @@ open class ChatCaptureService : AccessibilityService() {
      * starts a new one. Side is unknowable from a flat screen read, so every
      * group is filed as the other person (and [OCR_NOTE] says so on the panel).
      */
-    private fun groupOcrLines(lines: List<OcrLine>): List<Msg> {
+    private fun groupOcrLines(lines: List<OcrLine>, pkg: String): List<Msg> {
         val usable = lines
             .filter { it.text.isNotBlank() && !PURE_TIME.matches(it.text.trim()) }
             .sortedBy { it.bounds.top }
@@ -751,15 +757,27 @@ open class ChatCaptureService : AccessibilityService() {
                 val gap = l.bounds.top - p.bounds.bottom
                 val lineHeight = maxOf(p.bounds.height(), 1)
                 if (gap > lineHeight * 1.2f) {
-                    if (buf.isNotEmpty()) { out.add(Msg("other", buf.toString())); buf.setLength(0) }
+                    if (buf.isNotEmpty()) { out.add(Msg(sideOf(p, pkg), buf.toString())); buf.setLength(0) }
                 }
             }
             if (buf.isNotEmpty()) buf.append(' ')
             buf.append(l.text.trim())
             prev = l
         }
-        if (buf.isNotEmpty()) out.add(Msg("other", buf.toString()))
+        if (buf.isNotEmpty()) out.add(Msg(sideOf(prev, pkg), buf.toString()))
         return out
+    }
+
+    /**
+     * Whole-screen OCR has no node geometry, so the side comes from where the
+     * words sit: a bubble hugging the right half is mine. Only WeChat does this
+     * — the other OCR paths (Feishu) genuinely cannot tell, and say so.
+     */
+    private fun sideOf(line: OcrLine?, pkg: String): String {
+        if (line == null || pkg != "com.tencent.mm") return "other"
+        val w = resources.displayMetrics.widthPixels
+        val center = line.bounds.centerX()
+        return if (center > w * 0.55f) "me" else "other"
     }
 
     /** Strip the read receipt and the timestamp Feishu glues onto a bubble. */
@@ -1049,7 +1067,7 @@ open class ChatCaptureService : AccessibilityService() {
          *  No adapter, no capture, only a one-time "not supported" notice. */
         /** Supported apps that are read through the node tree only and never
          *  screenshotted: no OCR fallback, no manual "截屏识别一次". */
-        private val NO_SCREENSHOT_PKGS = setOf(WhatsAppRules.PACKAGE, "com.tencent.mm")
+        private val NO_SCREENSHOT_PKGS = setOf(WhatsAppRules.PACKAGE)
 
         private val BLOCKED_PKGS = setOf("cn.soulapp.android")
 

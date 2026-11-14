@@ -111,20 +111,48 @@ class ScreenCapture(
         // issued and read inside the callback, so the mapping always matches the
         // call that actually produced the bitmap.
         var windowBounds: Rect? = null
-        // The system can simply never call back (seen when a shot lands on a
-        // protected window during a transition). Without this the overlay stays
-        // INVISIBLE and the caller's busy flag is stuck until the service dies.
-        val timeout = Runnable { finish(Result.Failed(CODE_TIMEOUT, humanMessage(CODE_TIMEOUT))) }
+        var usingWindow = false
+        var watchdog: Runnable? = null
+
+        fun armWatchdog() {
+            val t = Runnable { finish(Result.Failed(CODE_TIMEOUT, humanMessage(CODE_TIMEOUT))) }
+            watchdog = t
+            main.postDelayed(t, TIMEOUT_MS)
+        }
+
+        fun disarm() {
+            watchdog?.let { main.removeCallbacks(it) }
+            watchdog = null
+        }
+
         val cb = object : AccessibilityService.TakeScreenshotCallback {
             override fun onSuccess(result: AccessibilityService.ScreenshotResult) {
-                main.removeCallbacks(timeout)
+                disarm()
                 // Already timed out: this result is void. Drop the buffer (never
                 // leak it) and do not touch the caller a second time.
                 if (done.get()) { runCatching { result.hardwareBuffer.close() }; return }
                 finish(toBitmap(result, windowBounds))
             }
+
             override fun onFailure(errorCode: Int) {
-                main.removeCallbacks(timeout)
+                disarm()
+                if (done.get()) return
+                // A window shot fails whenever this service cannot see that
+                // window — WeChat reports an empty root node, so the shot comes
+                // back as "window not visible / protected". The display shot does
+                // not need per-window visibility, so try it once before giving up.
+                if (usingWindow) {
+                    usingWindow = false
+                    windowBounds = null
+                    try {
+                        service.takeScreenshot(Display.DEFAULT_DISPLAY, exec, cb)
+                        armWatchdog()
+                        Log.i(TAG, "window shot failed ($errorCode), retried as display shot")
+                        return
+                    } catch (e: Throwable) {
+                        Log.w(TAG, "display retry unavailable: ${e.javaClass.simpleName}")
+                    }
+                }
                 finish(Result.Failed(errorCode, humanMessage(errorCode)))
             }
         }
@@ -142,10 +170,12 @@ class ScreenCapture(
                     r
                 }.getOrNull()?.takeIf { it.width() > 0 && it.height() > 0 }
                 try {
+                    usingWindow = true
                     service.takeScreenshotOfWindow(windowId, exec, cb)
-                    main.postDelayed(timeout, TIMEOUT_MS)
+                    armWatchdog()
                     return
                 } catch (e: Throwable) {
+                    usingWindow = false
                     windowBounds = null
                     Log.w(TAG, "takeScreenshotOfWindow unavailable: ${e.javaClass.simpleName}")
                 }
@@ -153,7 +183,7 @@ class ScreenCapture(
         }
         try {
             service.takeScreenshot(Display.DEFAULT_DISPLAY, exec, cb)
-            main.postDelayed(timeout, TIMEOUT_MS)
+            armWatchdog()
         } catch (e: Throwable) {
             finish(Result.Failed(CODE_INTERNAL, "截屏失败：${e.javaClass.simpleName}"))
         }
